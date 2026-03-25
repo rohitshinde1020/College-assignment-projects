@@ -39,6 +39,25 @@
           <h2>All Books</h2>
           <p>Simple book list with images and prices.</p>
         </div>
+        <div class="catalog-controls" aria-label="Book catalog search and filters">
+          <label class="search-field" for="book-search">
+            <span>Search books</span>
+            <input
+              type="search"
+              id="book-search"
+              placeholder="Search by title or category"
+              autocomplete="off"
+            />
+          </label>
+          <div class="filter-groups">
+            <button type="button" class="filter-btn active" data-filter="all">All</button>
+            <button type="button" class="filter-btn" data-filter="literary fiction">Literary Fiction</button>
+            <button type="button" class="filter-btn" data-filter="business & strategy">Business & Strategy</button>
+            <button type="button" class="filter-btn" data-filter="design & creativity">Design & Creativity</button>
+            <button type="button" class="filter-btn" data-filter="personal growth">Personal Growth</button>
+          </div>
+          <p class="results-summary" id="results-summary" aria-live="polite"></p>
+        </div>
         <div class="product-grid">
           <article class="product">
             <img src="images/book-01.jpg" alt="Open Chapter - Literary Fiction Book | Buy Online" />
@@ -276,5 +295,54 @@
         <div class="footer-note">@ 2026 BookNest. All rights reserved.</div>
       </footer>
     </div>
+    <script>
+      const searchInput = document.getElementById("book-search");
+      const filterButtons = document.querySelectorAll(".filter-btn");
+      const products = document.querySelectorAll(".product-grid .product");
+      const resultsSummary = document.getElementById("results-summary");
+      const totalBooks = products.length;
+      let activeFilter = "all";
+
+      const updateResults = () => {
+        const query = searchInput.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        products.forEach((product) => {
+          const title = product.querySelector("h3").textContent.toLowerCase();
+          const category = product.querySelector(".meta").textContent.toLowerCase();
+
+          const matchesSearch = title.includes(query) || category.includes(query);
+          const matchesCategory = activeFilter === "all" || category === activeFilter;
+          const isVisible = matchesSearch && matchesCategory;
+
+          product.style.display = isVisible ? "block" : "none";
+          if (isVisible) {
+            visibleCount += 1;
+          }
+        });
+
+        if (visibleCount === 0) {
+          resultsSummary.textContent = "No books found. Try another search or category.";
+          return;
+        }
+
+        resultsSummary.textContent = `Showing ${visibleCount} of ${totalBooks} books`;
+      };
+
+      searchInput.addEventListener("input", updateResults);
+
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          activeFilter = button.dataset.filter;
+
+          filterButtons.forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+
+          updateResults();
+        });
+      });
+
+      updateResults();
+    </script>
   </body>
 </html>
