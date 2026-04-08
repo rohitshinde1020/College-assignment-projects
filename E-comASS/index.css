@@ -186,6 +186,87 @@ button {
   font-size: 0.95rem;
 }
 
+.cart-section {
+  margin-top: 36px;
+}
+
+.cart-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+}
+
+.cart-items {
+  display: grid;
+  gap: 10px;
+}
+
+.cart-empty {
+  color: #645b52;
+}
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 72px 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #eee5d9;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.cart-item img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.cart-item-details h4 {
+  margin-bottom: 4px;
+}
+
+.cart-item-details p {
+  color: #645b52;
+  font-size: 0.9rem;
+}
+
+.qty-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qty-controls button {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  padding: 0;
+}
+
+.remove-btn {
+  background: #7f2d2d;
+}
+
+.cart-summary {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.checkout-status {
+  color: #2e5f34;
+  font-weight: 600;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .category-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -241,6 +322,33 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.price-row button {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transform-origin: center;
+}
+
+.price-row button:hover {
+  transform: translateY(-2px) scale(1.03);
+  background: #a75f35;
+  box-shadow: 0 10px 16px rgba(182, 106, 60, 0.3);
+}
+
+.price-row button:active {
+  animation: cart-button-pop 0.24s ease;
+}
+
+@keyframes cart-button-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1.06);
+  }
 }
 
 .price {
@@ -309,6 +417,10 @@ button {
   .filter-btn {
     width: 100%;
     text-align: center;
+  }
+
+  .cart-item {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -30,6 +30,7 @@
           <li><a href="index.html">Home</a></li>
           <li><a href="categories.html">Categories</a></li>
           <li><a href="books.html">Books</a></li>
+          <li><a href="#cart-section">Cart (<span id="cart-count">0</span>)</a></li>
           <li><a href="contact.html">Contact</a></li>
         </ul>
       </nav>
@@ -38,25 +39,6 @@
         <div class="section-heading">
           <h2>All Books</h2>
           <p>Simple book list with images and prices.</p>
-        </div>
-        <div class="catalog-controls" aria-label="Book catalog search and filters">
-          <label class="search-field" for="book-search">
-            <span>Search books</span>
-            <input
-              type="search"
-              id="book-search"
-              placeholder="Search by title or category"
-              autocomplete="off"
-            />
-          </label>
-          <div class="filter-groups">
-            <button type="button" class="filter-btn active" data-filter="all">All</button>
-            <button type="button" class="filter-btn" data-filter="literary fiction">Literary Fiction</button>
-            <button type="button" class="filter-btn" data-filter="business & strategy">Business & Strategy</button>
-            <button type="button" class="filter-btn" data-filter="design & creativity">Design & Creativity</button>
-            <button type="button" class="filter-btn" data-filter="personal growth">Personal Growth</button>
-          </div>
-          <p class="results-summary" id="results-summary" aria-live="polite"></p>
         </div>
         <div class="product-grid">
           <article class="product">
@@ -282,6 +264,22 @@
         </div>
       </section>
 
+      <section id="cart-section" class="section cart-section" aria-label="Shopping cart">
+        <div class="section-heading">
+          <h2>Your Cart</h2>
+          <p>Session-based cart. Your items stay until this browser tab/session is closed.</p>
+        </div>
+        <div class="cart-box">
+          <div id="cart-items" class="cart-items"></div>
+          <div class="cart-summary">
+            <p>Items: <strong id="cart-item-total">0</strong></p>
+            <p>Total: <strong id="cart-grand-total">$0.00</strong></p>
+            <button id="checkout-btn" type="button">Checkout</button>
+            <p id="checkout-status" class="checkout-status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
       <footer class="footer">
         <div>
           <h3>BookNest</h3>
@@ -296,53 +294,135 @@
       </footer>
     </div>
     <script>
-      const searchInput = document.getElementById("book-search");
-      const filterButtons = document.querySelectorAll(".filter-btn");
-      const products = document.querySelectorAll(".product-grid .product");
-      const resultsSummary = document.getElementById("results-summary");
-      const totalBooks = products.length;
-      let activeFilter = "all";
+      const CART_STORAGE_KEY = "booknest-session-cart";
+      const productGrid = document.querySelector(".product-grid");
+      const cartItems = document.getElementById("cart-items");
+      const cartCount = document.getElementById("cart-count");
+      const cartItemTotal = document.getElementById("cart-item-total");
+      const cartGrandTotal = document.getElementById("cart-grand-total");
+      const checkoutBtn = document.getElementById("checkout-btn");
+      const checkoutStatus = document.getElementById("checkout-status");
 
-      const updateResults = () => {
-        const query = searchInput.value.trim().toLowerCase();
-        let visibleCount = 0;
+      let cart = JSON.parse(sessionStorage.getItem(CART_STORAGE_KEY) || "[]");
 
-        products.forEach((product) => {
-          const title = product.querySelector("h3").textContent.toLowerCase();
-          const category = product.querySelector(".meta").textContent.toLowerCase();
+      const saveCart = () => {
+        sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+      };
 
-          const matchesSearch = title.includes(query) || category.includes(query);
-          const matchesCategory = activeFilter === "all" || category === activeFilter;
-          const isVisible = matchesSearch && matchesCategory;
+      const toId = (title, category) => {
+        return `${title}-${category}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      };
 
-          product.style.display = isVisible ? "block" : "none";
-          if (isVisible) {
-            visibleCount += 1;
-          }
+      const toPrice = (text) => Number.parseFloat(text.replace(/[^0-9.]/g, ""));
+
+      const renderCart = () => {
+        let totalQty = 0;
+        let totalPrice = 0;
+
+        cart.forEach((item) => {
+          totalQty += item.qty;
+          totalPrice += item.price * item.qty;
         });
 
-        if (visibleCount === 0) {
-          resultsSummary.textContent = "No books found. Try another search or category.";
+        cartCount.textContent = totalQty;
+        cartItemTotal.textContent = totalQty;
+        cartGrandTotal.textContent = `$${totalPrice.toFixed(2)}`;
+        checkoutBtn.disabled = cart.length === 0;
+
+        if (cart.length === 0) {
+          cartItems.innerHTML = '<p class="cart-empty">Your cart is empty.</p>';
           return;
         }
 
-        resultsSummary.textContent = `Showing ${visibleCount} of ${totalBooks} books`;
+        cartItems.innerHTML = cart
+          .map(
+            (item) => `
+            <article class="cart-item" data-id="${item.id}">
+              <img src="${item.image}" alt="${item.title}" />
+              <div class="cart-item-details">
+                <h4>${item.title}</h4>
+                <p>${item.category}</p>
+                <p>$${item.price.toFixed(2)}</p>
+              </div>
+              <div class="qty-controls">
+                <button type="button" data-action="decrease" data-id="${item.id}">-</button>
+                <span>${item.qty}</span>
+                <button type="button" data-action="increase" data-id="${item.id}">+</button>
+              </div>
+              <button type="button" class="remove-btn" data-action="remove" data-id="${item.id}">Remove</button>
+            </article>
+          `
+          )
+          .join("");
       };
 
-      searchInput.addEventListener("input", updateResults);
+      productGrid.addEventListener("click", (event) => {
+        if (!event.target.matches(".price-row button")) {
+          return;
+        }
 
-      filterButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          activeFilter = button.dataset.filter;
+        const product = event.target.closest(".product");
+        const title = product.querySelector("h3").textContent.trim();
+        const category = product.querySelector(".meta").textContent.trim();
+        const price = toPrice(product.querySelector(".price").textContent.trim());
+        const image = product.querySelector("img").src;
+        const id = toId(title, category);
+        const existing = cart.find((item) => item.id === id);
 
-          filterButtons.forEach((item) => item.classList.remove("active"));
-          button.classList.add("active");
+        if (existing) {
+          existing.qty += 1;
+        } else {
+          cart.push({ id, title, category, price, image, qty: 1 });
+        }
 
-          updateResults();
-        });
+        saveCart();
+        renderCart();
       });
 
-      updateResults();
+      cartItems.addEventListener("click", (event) => {
+        const action = event.target.dataset.action;
+        const id = event.target.dataset.id;
+        if (!action || !id) {
+          return;
+        }
+
+        const item = cart.find((entry) => entry.id === id);
+        if (!item) {
+          return;
+        }
+
+        if (action === "increase") {
+          item.qty += 1;
+        }
+
+        if (action === "decrease") {
+          item.qty -= 1;
+        }
+
+        if (action === "remove" || item.qty <= 0) {
+          cart = cart.filter((entry) => entry.id !== id);
+        }
+
+        saveCart();
+        renderCart();
+      });
+
+      checkoutBtn.addEventListener("click", () => {
+        if (cart.length === 0) {
+          return;
+        }
+
+        if (!window.confirm("Place order and clear your cart?")) {
+          return;
+        }
+
+        cart = [];
+        saveCart();
+        renderCart();
+        checkoutStatus.textContent = "Checkout complete. Thank you for your order!";
+      });
+
+      renderCart();
     </script>
   </body>
 </html>
